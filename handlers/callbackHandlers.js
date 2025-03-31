@@ -54,21 +54,18 @@ async function handleClientCallbacks(ctx) {
 
             if (!task) {
                 await ctx.answerCbQuery('❌ Задача не найдена');
-                await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
                 return;
             }
 
             // Проверяем, принадлежит ли задача пользователю
             if (task.clientId !== userId) {
                 await ctx.answerCbQuery('❌ У вас нет прав на редактирование этой задачи');
-                await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
                 return;
             }
 
             // Проверяем статус задачи
             if (task.status === 'completed' || task.status === 'deleted') {
                 await ctx.answerCbQuery('❌ Нельзя редактировать завершенную или удаленную задачу');
-                await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
                 return;
             }
 
@@ -77,14 +74,9 @@ async function handleClientCallbacks(ctx) {
                 taskId: taskId
             };
 
-            await ctx.answerCbQuery();
-            await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
-            await ctx.reply(
-                '📝 Введите новое описание задачи:\n\n' +
-                'Текущее описание:\n' +
-                task.description + '\n\n' +
-                'Используйте /cancel для отмены',
-                Markup.removeKeyboard()
+            await ctx.editMessageText(
+                `📝 Введите новое описание задачи:\n\nТекущее описание:\n${task.description}\n\nИспользуйте /cancel для отмены`,
+                { parse_mode: 'HTML', ...Markup.removeKeyboard() }
             );
             return;
         }
@@ -96,29 +88,24 @@ async function handleClientCallbacks(ctx) {
 
             if (!task) {
                 await ctx.answerCbQuery('❌ Задача не найдена');
-                await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
                 return;
             }
 
             // Проверяем, принадлежит ли задача пользователю
             if (task.clientId !== userId) {
                 await ctx.answerCbQuery('❌ У вас нет прав на удаление этой задачи');
-                await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
                 return;
             }
 
             // Проверяем статус задачи
             if (task.status === 'deleted') {
                 await ctx.answerCbQuery('❌ Задача уже удалена');
-                await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
                 return;
             }
 
             await deleteTask(taskId, ctx.from.username || ctx.from.id.toString());
 
-            await ctx.answerCbQuery('✅ Задача удалена');
-            await ctx.deleteMessage().catch(err => console.error('Error deleting message:', err));
-            await ctx.reply('Задача успешно удалена.', clientMenu);
+            await ctx.editMessageText('✅ Задача удалена.', clientMenu);
             return;
         }
 
@@ -126,26 +113,34 @@ async function handleClientCallbacks(ctx) {
         if (callbackData.startsWith('task_history:')) {
             const taskId = callbackData.split(':')[1];
             await handleTaskHistory(ctx, taskId);
-        } else if (callbackData.startsWith('tz_history:')) {
+        }
+
+        // Просмотр истории ТЗ
+        if (callbackData.startsWith('tz_history:')) {
             const tzId = callbackData.split(':')[1];
             await handleTZHistory(ctx, tzId);
-        } else if (callbackData === 'back_to_menu') {
-            await ctx.reply('Выберите действие:', Markup.inlineKeyboard([
-                [
-                    Markup.button.callback('📝 Заказать задачу', 'client_create_task'),
-                    Markup.button.callback('✏ Редактировать задачу', 'client_edit_task')
-                ],
-                [
-                    Markup.button.callback('🗑 Удалить задачу', 'client_delete_task'),
-                    Markup.button.callback('🔗 Смотреть процесс', 'client_view_progress')
-                ]
-            ]));
+        } 
+        
+        // Назад в меню
+        if (callbackData === 'back_to_menu') {
+            await ctx.editMessageText('Выберите действие:', {
+                parse_mode: 'HTML',
+                ...Markup.inlineKeyboard([
+                    [
+                        Markup.button.callback('📝 Заказать задачу', 'client_create_task'),
+                        Markup.button.callback('✏ Редактировать задачу', 'client_edit_task')
+                    ],
+                    [
+                        Markup.button.callback('🗑 Удалить задачу', 'client_delete_task'),
+                        Markup.button.callback('🔗 Смотреть процесс', 'client_view_progress')
+                    ]
+                ])
+            });
         }
 
     } catch (error) {
         console.error('Error in handleClientCallbacks:', error);
         await ctx.answerCbQuery('❌ Произошла ошибка').catch(() => { });
-        await ctx.reply('❌ Произошла ошибка. Попробуйте позже.', clientMenu);
     }
 }
 
@@ -195,15 +190,13 @@ async function handleTaskHistory(ctx, taskId) {
             }
         }
 
-        await ctx.reply(historyMessage, {
+        await ctx.editMessageText(historyMessage, {
             parse_mode: 'HTML',
-            ...Markup.inlineKeyboard([[
-                Markup.button.callback('◀️ Назад', 'back_to_menu')
-            ]])
+            ...Markup.inlineKeyboard([[Markup.button.callback('◀️ Назад', 'back_to_menu')]])
         });
     } catch (error) {
         console.error('Error in handleTaskHistory:', error);
-        await ctx.reply('❌ Произошла ошибка при получении истории задачи.');
+        await ctx.editMessageText('❌ Произошла ошибка при получении истории задачи.');
     }
 }
 
@@ -238,15 +231,14 @@ async function handleTZHistory(ctx, tzId) {
             historyMessage += `${formatDate(record.timestamp)} - ${formatAction(record.action)} (${record.user})\n`;
         }
 
-        await ctx.reply(historyMessage, {
+        await ctx.editMessageText(historyMessage, {
             parse_mode: 'HTML',
-            ...Markup.inlineKeyboard([[
-                Markup.button.callback('◀️ Назад', 'back_to_menu')
-            ]])
+            ...Markup.inlineKeyboard([[Markup.button.callback('◀️ Назад', 'back_to_menu')]])
         });
+
     } catch (error) {
         console.error('Error in handleTZHistory:', error);
-        await ctx.reply('❌ Произошла ошибка при получении истории ТЗ.');
+        await ctx.editMessageText('❌ Произошла ошибка при получении истории ТЗ.');
     }
 }
 

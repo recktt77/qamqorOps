@@ -15,24 +15,41 @@ async function showMenuAfterAction(ctx) {
       Markup.button.callback('🔗 Смотреть процесс', 'client_view_progress')
     ]
   ];
-  await ctx.reply('Выберите действие:', Markup.inlineKeyboard(buttons));
+  if (ctx.callbackQuery) {
+    // If coming from a callback query, edit the existing message
+    await ctx.editMessageText(newText, Markup.inlineKeyboard(buttons));
+  } else {
+    // Send a new message and store its ID
+    const sentMessage = await ctx.reply(newText, Markup.inlineKeyboard(buttons));
+    ctx.session.menuMessageId = sentMessage.message_id;
+  }
 }
 
 // Создание задачи
 async function createTask(ctx) {
   try {
     ctx.session = { step: 'waiting_for_description' };
-    await ctx.reply(
-      '📝 Опишите вашу задачу:\n\n' +
-      '• Минимум 10 символов\n' +
-      '• Опишите задачу подробно\n' +
-      '• Используйте /cancel для отмены'
-    );
+
+    if (ctx.callbackQuery) {
+      await ctx.editMessageText(
+        '📝 Опишите вашу задачу:\n\n' +
+        '• Минимум 10 символов\n' +
+        '• Опишите задачу подробно\n' +
+        '• Используйте /cancel для отмены'
+      );
+    } else {
+      await ctx.reply(
+        '📝 Опишите вашу задачу:\n\n' +
+        '• Минимум 10 символов\n' +
+        '• Опишите задачу подробно\n' +
+        '• Используйте /cancel для отмены'
+      );
+    }
+
   } catch (error) {
     console.error('Error in createTask:', error);
-    await ctx.reply('❌ Произошла ошибка. Попробуйте позже.');
+    await showMenuAfterAction(ctx, '❌ Произошла ошибка. Попробуйте позже.');
     ctx.session = {};
-    await showMenuAfterAction(ctx);
   }
 }
 
@@ -63,8 +80,7 @@ async function editTask(ctx) {
     const tasks = await getActiveTasks(ctx.from.id);
 
     if (tasks.length === 0) {
-      await ctx.reply('У вас нет активных задач для редактирования.');
-      await showMenuAfterAction(ctx);
+      await showMenuAfterAction(ctx, 'У вас нет активных задач для редактирования.');
       return;
     }
 
@@ -75,7 +91,7 @@ async function editTask(ctx) {
       )];
     });
 
-    await ctx.reply(
+    await ctx.editMessageText(
       'Выберите задачу для редактирования:',
       Markup.inlineKeyboard([
         ...buttons,
@@ -84,8 +100,7 @@ async function editTask(ctx) {
     );
   } catch (error) {
     console.error('Error in editTask:', error);
-    await ctx.reply('❌ Произошла ошибка. Попробуйте позже.');
-    await showMenuAfterAction(ctx);
+    await showMenuAfterAction(ctx, '❌ Произошла ошибка. Попробуйте позже.');
   }
 }
 
@@ -95,8 +110,7 @@ async function deleteTaskCommand(ctx) {
     const tasks = await getActiveTasks(ctx.from.id);
 
     if (tasks.length === 0) {
-      await ctx.reply('У вас нет активных задач для удаления.');
-      await showMenuAfterAction(ctx);
+      await showMenuAfterAction(ctx, 'У вас нет активных задач для удаления.');
       return;
     }
 
@@ -107,7 +121,7 @@ async function deleteTaskCommand(ctx) {
       )];
     });
 
-    await ctx.reply(
+    await ctx.editMessageText(
       '⚠️ Выберите задачу для удаления:',
       Markup.inlineKeyboard([
         ...buttons,
@@ -116,8 +130,7 @@ async function deleteTaskCommand(ctx) {
     );
   } catch (error) {
     console.error('Error in deleteTask:', error);
-    await ctx.reply('❌ Произошла ошибка. Попробуйте позже.');
-    await showMenuAfterAction(ctx);
+    await showMenuAfterAction(ctx, '❌ Произошла ошибка. Попробуйте позже.');
   }
 }
 

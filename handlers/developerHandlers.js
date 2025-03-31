@@ -4,6 +4,18 @@ const TechnicalTask = require('../models/technicalTask');
 const { formatTask } = require('../utils/taskUtils');
 const { isDeveloper } = require('../utils/helpers');
 
+async function safeEditMessage(ctx, newText, buttons) {
+  try {
+    if (buttons.length === 0) {
+      return await ctx.reply(newText); // Send new message if no buttons
+    }
+    return await ctx.editMessageText(newText, Markup.inlineKeyboard(buttons));
+  } catch (error) {
+    console.error('Error in safeEditMessage:', error);
+    return await ctx.reply(newText); // Fallback to new message if editing fails
+  }
+}
+
 // Просмотр новых задач
 async function listTasks(ctx) {
   try {
@@ -26,7 +38,7 @@ async function listTasks(ctx) {
         ]
       ];
 
-      await ctx.reply(formatTask(task), Markup.inlineKeyboard(buttons));
+      await safeEditMessage(ctx, formatTask(task), buttons);
     }
   } catch (error) {
     console.error('Error in listTasks:', error);
@@ -103,7 +115,7 @@ async function listInProgressTasks(ctx) {
         message += `\n\n📄 ТЗ: ${tz.description}\n💰 Оплата: ${tz.payment} тг.`;
       }
 
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+      await safeEditMessage(ctx, message, buttons);
     }
   } catch (error) {
     console.error('Error in listInProgressTasks:', error);
@@ -139,7 +151,7 @@ async function listCompletedTasks(ctx) {
         message += `\n\n📄 ТЗ: ${tz.description}\n💰 Оплата: ${tz.payment} тг.`;
       }
 
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+      await safeEditMessage(ctx, message, buttons);
     }
   } catch (error) {
     console.error('Error in listCompletedTasks:', error);

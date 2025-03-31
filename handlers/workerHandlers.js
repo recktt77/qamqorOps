@@ -53,7 +53,12 @@ async function showWorkerMenu(ctx) {
     ]
   ];
 
-  await ctx.reply('Выберите действие:', Markup.inlineKeyboard(buttons));
+  try {
+    await ctx.editMessageText('Выберите действие:', Markup.inlineKeyboard(buttons));
+  } catch (error) {
+    // If message cannot be edited (e.g., it's deleted), send a new one.
+    await ctx.reply('Выберите действие:', Markup.inlineKeyboard(buttons));
+  }
 }
 
 // Просмотр доступных ТЗ
@@ -72,14 +77,25 @@ async function listAvailableTZ(ctx) {
     }).sort({ _id: -1 });
 
     if (technicalTasks.length === 0) {
-      await ctx.reply(
-        '📭 На данный момент нет доступных ТЗ.\n' +
-        'Попробуйте проверить позже.',
-        Markup.inlineKeyboard([[
-          Markup.button.callback('🔄 Обновить', 'worker_available_tz')
-        ]])
-      );
-      return;
+      try {
+        await ctx.editMessageText(
+          '📭 На данный момент нет доступных ТЗ.\n' +
+          'Попробуйте проверить позже.',
+          Markup.inlineKeyboard([[
+            Markup.button.callback('🔄 Обновить', 'worker_available_tz')
+          ]])
+        );
+      }
+      catch (error) {
+        await ctx.reply(
+          '📭 На данный момент нет доступных ТЗ.\n' +
+          'Попробуйте проверить позже.',
+          Markup.inlineKeyboard([[
+            Markup.button.callback('🔄 Обновить', 'worker_available_tz')
+          ]])
+        );
+        return;
+      }
     }
 
     await ctx.reply(`📬 Найдено ТЗ: ${technicalTasks.length}`);
@@ -128,14 +144,25 @@ async function declineWork(ctx) {
     console.log(`Found ${activeTasks.length} active tasks`);
 
     if (activeTasks.length === 0) {
-      await ctx.reply(
-        '📭 У вас нет активных задач для отказа.\n' +
-        'Вы можете взять новые задачи в работу.',
-        Markup.inlineKeyboard([[
-          Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
-        ]])
-      );
-      return;
+      try {
+        await ctx.editMessageText(
+          '📭 У вас нет активных задач для отказа.\n' +
+          'Вы можете взять новые задачи в работу.',
+          Markup.inlineKeyboard([[
+            Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+          ]])
+        );
+      }
+      catch (error) {
+        await ctx.reply(
+          '📭 У вас нет активных задач для отказа.\n' +
+          'Вы можете взять новые задачи в работу.',
+          Markup.inlineKeyboard([[
+            Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+          ]])
+        );
+        return;
+      }
     }
 
     await ctx.reply(`🚧 Ваши активные задачи (${activeTasks.length}):`);
@@ -184,14 +211,25 @@ async function completeWork(ctx) {
     console.log(`Found ${activeTasks.length} active tasks`);
 
     if (activeTasks.length === 0) {
-      await ctx.reply(
-        '📭 У вас нет активных задач для завершения.\n' +
-        'Вы можете взять новые задачи в работу.',
-        Markup.inlineKeyboard([[
-          Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
-        ]])
-      );
-      return;
+      try {
+        await ctx.editMessageText(
+          '📭 У вас нет активных задач для отказа.\n' +
+          'Вы можете взять новые задачи в работу.',
+          Markup.inlineKeyboard([[
+            Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+          ]])
+        );
+      }
+      catch (error) {
+        await ctx.reply(
+          '📭 У вас нет активных задач для отказа.\n' +
+          'Вы можете взять новые задачи в работу.',
+          Markup.inlineKeyboard([[
+            Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+          ]])
+        );
+        return;
+      }
     }
 
     await ctx.reply(`🚧 Ваши активные задачи (${activeTasks.length}):`);
@@ -288,16 +326,30 @@ async function handleTZAction(ctx, action, tzId) {
         ]);
 
         console.log(`TZ ${tzId} taken by worker ${ctx.from.username}`);
-        await ctx.reply(
-          '✅ Вы успешно взяли ТЗ в работу!\n\n' +
-          'Теперь вы можете:\n' +
-          '• Завершить задачу после выполнения\n' +
-          '• Отказаться от задачи, если не можете её выполнить',
-          Markup.inlineKeyboard([
-            [Markup.button.callback('✅ Завершить', `complete_tz:${tzId}`)],
-            [Markup.button.callback('❌ Отказаться', `decline_tz:${tzId}`)]
-          ])
-        );
+        try {
+          await ctx.editMessageText(
+            '✅ Вы успешно взяли ТЗ в работу!\n\n' +
+            'Теперь вы можете:\n' +
+            '• Завершить задачу после выполнения\n' +
+            '• Отказаться от задачи, если не можете её выполнить',
+            Markup.inlineKeyboard([
+              [Markup.button.callback('✅ Завершить', `complete_tz:${tzId}`)],
+              [Markup.button.callback('❌ Отказаться', `decline_tz:${tzId}`)]
+            ])
+          );
+        }
+        catch (error) {
+          await ctx.reply(
+            '✅ Вы успешно взяли ТЗ в работу!\n\n' +
+            'Теперь вы можете:\n' +
+            '• Завершить задачу после выполнения\n' +
+            '• Отказаться от задачи, если не можете её выполнить',
+            Markup.inlineKeyboard([
+              [Markup.button.callback('✅ Завершить', `complete_tz:${tzId}`)],
+              [Markup.button.callback('❌ Отказаться', `decline_tz:${tzId}`)]
+            ])
+          );
+        }
         break;
 
       case 'decline':
@@ -337,13 +389,24 @@ async function handleTZAction(ctx, action, tzId) {
         ]);
 
         console.log(`TZ ${tzId} declined by worker ${ctx.from.username}`);
-        await ctx.reply(
-          '✅ Вы успешно отказались от ТЗ.\n' +
-          'Теперь это ТЗ снова доступно для других исполнителей.',
-          Markup.inlineKeyboard([[
-            Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
-          ]])
-        );
+        try {
+          await ctx.editMessageText(
+            '❌ Вы успешно отказались от ТЗ.\n' +
+            'Теперь это ТЗ снова доступно для других исполнителей.',
+            Markup.inlineKeyboard([[
+              Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+            ]])
+          );
+        }
+        catch (error) {
+          await ctx.reply(
+            '❌ Вы успешно отказались от ТЗ.\n' +
+            'Теперь это ТЗ снова доступно для других исполнителей.',
+            Markup.inlineKeyboard([[
+              Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+            ]])
+          );
+        }
         break;
 
       case 'complete':
@@ -383,13 +446,24 @@ async function handleTZAction(ctx, action, tzId) {
         ]);
 
         console.log(`TZ ${tzId} completed by worker ${ctx.from.username}`);
-        await ctx.reply(
-          '🎉 Поздравляем! ТЗ успешно завершено!\n\n' +
-          'Вы можете взять в работу новые задачи.',
-          Markup.inlineKeyboard([[
-            Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
-          ]])
-        );
+        try {
+          await ctx.editMessageText(
+            '✅ Вы успешно завершили ТЗ!\n\n' +
+            'Теперь вы можете взять в работу новые задачи.',
+            Markup.inlineKeyboard([[
+              Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+            ]])
+          );
+        }
+        catch (error) {
+          await ctx.reply(
+            '✅ Вы успешно завершили ТЗ!\n\n' +
+            'Теперь вы можете взять в работу новые задачи.',
+            Markup.inlineKeyboard([[
+              Markup.button.callback('📂 Показать доступные ТЗ', 'worker_available_tz')
+            ]])
+          );
+        }
         break;
 
       default:
